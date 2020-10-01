@@ -10,7 +10,37 @@ class Form extends Component {
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleDb = this.handleDb.bind(this);
+  }
+
+  componentDidMount() {
+      db.ref('todoList').on('value', snapshot => {
+        var todoList = snapshot.val();
+        if (todoList !== null) {
+          var keys = Object.keys(todoList);
+          var listTodo = []
+          for ( let i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            var todo = todoList[key].todo;
+            listTodo.push({
+              key: key,
+              value: todo
+            });
+          }
+          this.setState({
+            listTodo: listTodo
+          })
+        } else {
+          this.setState({
+            listTodo: []
+          })
+        }
+
+      })
+      console.log(this.state.listTodo)
+  }
+
+  componentWillUnmount() {
+    this.setState({value: ''})
   }
 
   handleChange(event) {
@@ -20,37 +50,14 @@ class Form extends Component {
   }
 
   handleSubmit(event) {
-    this.setState(state => {
-      const listTodo = state.listTodo.concat(state.value);
-      return {
-        value: '',
-        listTodo
-      }
+    db.ref('todoList').push({
+      todo: this.state.value
     })
+    this.setState({value: ''})
   }
 
   handleDelete(index) {
-    this.setState(state => {
-      const listTodo = state.listTodo.filter((item, key) => key !== index );
-      return {
-        value: '',
-        listTodo
-      }
-    })
-  }
-
-  handleDb() {
-    db.ref('todo2').update({
-      name: 'tung2',
-      todo: 'shopping2'
-    })
-  }
-
-  showDb() {
-    db.ref('todo2').on('value', snapshot => {
-      console.log(snapshot.child('name').val())
-    })
-    
+    db.ref('todoList/' + index).remove();
   }
 
   render () {
@@ -60,15 +67,13 @@ class Form extends Component {
           <input type="text" name="todoInput" 
             onChange={this.handleChange} value={this.state.value} />
           <button type="button" name="submitBtn" 
-            onClick={this.handleSubmit}>Submit</button>  
+            onClick={this.handleSubmit}>Submit</button>
         </form>
-        <button onClick={this.handleDb}>checkdb</button>
-        <button onClick={this.showDb}>showdb</button>
         <ul>
-          {this.state.listTodo.map((item, index) => (
-            <li key={index}>
-              {item}
-              <button onClick={() => this.handleDelete(index)}>Delete</button>
+          {this.state.listTodo.map(item => (
+            <li key={item.key}>
+              {item.value}
+              <button onClick={() => this.handleDelete(item.key)}>Delete</button>
             </li>
           ))}
         </ul>
